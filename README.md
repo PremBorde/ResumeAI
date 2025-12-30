@@ -1,105 +1,107 @@
-# AI-Powered Resume–Job Matching & Skill Gap Analysis (FastAPI)
+# ResumeAI – The Intelligent Career Companion
 
-## What this does
-- Upload a resume (PDF/DOCX) and extract cleaned text + structured signals (skills/education/experience).
-- Analyze resume vs job description using **Gemini embeddings** for semantic similarity.
-- Compute an explainable **0–100 match score** (semantic + skills).
-- Generate a **skill gap report** and **Gemini LLM resume suggestions** (JSON-structured).
+**ResumeAI** is an advanced, AI‑powered platform designed to bridge the gap between job seekers and their dream roles. Unlike basic keyword search tools, ResumeAI uses state-of-the-art semantic analysis to understand the *meaning* behind your experience and how it aligns with specific job requirements.
 
-## Setup (Windows PowerShell)
-From the workspace root:
+---
 
-```powershell
-cd "D:\Open\AIML Resume\resume_job_matcher"
-python -m pip install -r .\requirements.txt
+## 🚀 Key Features
+
+### 1. Semantic Resume–Job Matching
+- **Deep Alignment**: Uses Gemini `text-embedding-004` to measure semantic similarity beyond simple keyword matching.
+- **Transparent Scoring**: Get a 0–100 match score broken down by semantic similarity and hard-skill overlap.
+- **Explainable AI**: Not just a score—see *why* you matched and where you fell short.
+
+### 2. Comprehensive ATS Intelligence
+- **Skill Gap Analysis**: Instant identification of missing required vs. preferred skills.
+- **Structure Audit**: Checks for essential resume sections and identifies potential "red flags" that might trigger ATS filters.
+- **Actionable Recommendations**: Get specific advice on how to improve your resume for a particular JD.
+
+### 3. AI outreach Generator
+- **Personalized Cover Letters**: Tailored specifically to your resume and the target company.
+- **LinkedIn DM & Cold Mail**: Humanized, concise messages designed to get responses from recruiters and HR managers.
+- **No Placeholders**: Generates ready-to-use text by extracting your name, email, and company details directly from your data.
+
+### 4. Professional Exports
+- **Downloadable Reports**: Save your analysis as professional PDF or JSON reports.
+- **DOCX Tailoring**: Export your resume bullets directly into Word format, pre-optimized for the job you're applying for.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Core Backend**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.10+)
+- **AI/ML Infrastructure**: 
+  - [Google Gemini API](https://ai.google.dev/) for Embeddings and Text Generation.
+  - [FAISS](https://github.com/facebookresearch/faiss) (or optimized Numpy fallback) for high-performance vector search.
+- **Frontend**: Clean, modern Single Page Application (SPA) using HTML5, CSS3 (Custom Variables/Grid), and Vanilla JavaScript.
+- **Data Handling**: 
+  - Structured extraction from PDF and DOCX.
+  - Local persistence for resumes, analyses, and embedding caches.
+
+---
+
+## 💻 Technical Implementation Details
+
+- **Semantic Search**: We transform both the resume and the job description into high-dimensional vectors. The similarity is calculated using cosine distance, providing a much more accurate match than traditional string matching.
+- **Prompt Engineering**: Uses sophisticated system prompts to ensure LLM outputs are "humanized," free of markdown artifacts, and strictly grounded in the provided resume data.
+- **Asynchronous Flow**: Built with FastAPI's async capabilities to handle heavy AI processing without blocking the UI.
+
+---
+
+## ⚙️ Setup & Installation
+
+### Prerequisites
+- Python 3.10+
+- A Google Gemini API Key ([Get one here](https://aistudio.google.com/app/apikey))
+
+### 1. Clone & Prepare Environment
+```bash
+git clone https://github.com/PremBorde/ResumeAI.git
+cd ResumeAI
+
+# Create virtual environment
+# Windows:
+python -m venv .venv
+.venv\Scripts\activate
+
+# Linux/Mac:
+python -m venv .venv
+source .venv/bin/activate
 ```
 
-Set your Gemini key (recommended):
-
-```powershell
-$env:GEMINI_API_KEY="YOUR_KEY"
+### 2. Install Dependencies
+```bash
+pip install -r requirements.txt
 ```
 
-Notes:
-- Do not hard-code API keys in code or commits.
-- `env.example` shows the required variable name.
-
-## Run
-
-```powershell
-cd "D:\Open\AIML Resume\resume_job_matcher"
-python -m uvicorn main:app --host 127.0.0.1 --port 8000
+### 3. Environment Configuration
+Create a `.env` file in the root directory (refer to `env.example`):
+```env
+GEMINI_API_KEY=your_actual_key_here
+GEMINI_GENERATION_MODEL=gemini-2.5-flash-lite
 ```
 
-Open docs: `http://127.0.0.1:8000/docs`
+---
 
-## Evaluation harness (batch scoring)
-Run a small offline evaluation over stored resumes (`data/resumes/*.json`) against sample JDs in `scripts/eval_jds.json`:
+## 🏃 Running the Application
 
-```powershell
-cd "D:\Open\AIML Resume\resume_job_matcher"
-python -m scripts.eval
+Start the server:
+```bash
+python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-Output: `scripts/eval_results.csv`
+- **Web Interface**: `http://127.0.0.1:8000/`
+- **Interactive API Docs**: `http://127.0.0.1:8000/docs`
 
-## API
+---
 
-### POST `/upload-resume`
-Upload a PDF/DOCX resume.
+## 🗺️ Roadmap
+- [ ] Integration with LinkedIn API for auto-fetching JDs.
+- [ ] Multi-resume comparison (Rank your resumes for one job).
+- [ ] LaTeX-based resume generation.
+- [ ] Support for more document types (RTF, TXT).
 
-Example:
+---
 
-```powershell
-curl -X POST "http://127.0.0.1:8000/upload-resume" `
-  -H "accept: application/json" `
-  -H "Content-Type: multipart/form-data" `
-  -F "file=@D:\path\to\resume.pdf"
-```
-
-### POST `/analyze-match`
-Analyze a stored resume against a raw job description.
-
-```powershell
-curl -X POST "http://127.0.0.1:8000/analyze-match" `
-  -H "accept: application/json" `
-  -H "Content-Type: application/json" `
-  -d "{ \"resume_id\": \"resume_...\", \"job_description_text\": \"Paste JD text here...\" }"
-```
-
-The response includes:
-- `score.semantic_similarity_score` (0–100)
-- `score.skill_overlap_score` (0–100)
-- `score.final_match_score` (0–100)
-- `skill_gap.matching_skills`, `missing_required_skills`, `nice_to_have_skills`
-- `suggestions` (JSON) when Gemini generation succeeds
-
-### GET `/match-score?analysis_id=...`
-
-```powershell
-curl "http://127.0.0.1:8000/match-score?analysis_id=analysis_..."
-```
-
-### GET `/skill-gap-report?analysis_id=...`
-
-```powershell
-curl "http://127.0.0.1:8000/skill-gap-report?analysis_id=analysis_..."
-```
-
-### GET `/resume-suggestions?analysis_id=...`
-
-```powershell
-curl "http://127.0.0.1:8000/resume-suggestions?analysis_id=analysis_..."
-```
-
-## Storage layout (local dev)
-- `data/uploads/`: raw uploaded files
-- `data/resumes/`: parsed resume records (JSON)
-- `data/analyses/`: analysis records (JSON)
-- `embeddings/cache/`: cached embedding vectors (`.npy`)
-
-## Notes on FAISS
-On Windows, FAISS pip wheels are often unavailable. This codebase uses a **numpy cosine-similarity fallback** for vector search, and uses FAISS automatically when installed (commonly on Linux).
-
-
-
+## 📄 License
+This project is licensed under the MIT License - see the LICENSE file for details.
